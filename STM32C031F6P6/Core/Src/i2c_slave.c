@@ -10,9 +10,10 @@
 #include "main.h"
 #include "i2c_slave.h"
 
-#define RxSIZE 6
+#define RxSIZE 16
 uint8_t RxData[RxSIZE];
-
+uint8_t RxCounter = 0;
+uint8_t registers[32] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 uint32_t counterSCC = 0;
 
 /**
@@ -32,7 +33,7 @@ void HAL_I2C_AddrCallback(I2C_HandleTypeDef *hi2c, uint8_t TransferDirection, ui
 {
 	if (TransferDirection == I2C_DIRECTION_TRANSMIT)
 	{
-		HAL_I2C_Slave_Seq_Receive_IT(hi2c, RxData, RxSIZE, I2C_FIRST_AND_LAST_FRAME);
+		HAL_I2C_Slave_Seq_Receive_IT(hi2c, RxData, RxSIZE, I2C_FIRST_FRAME);
 	}
 	else
 	{
@@ -46,7 +47,19 @@ void HAL_I2C_AddrCallback(I2C_HandleTypeDef *hi2c, uint8_t TransferDirection, ui
  */
 void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef *hi2c)
 {
-	counterSCC++;
+	RxCounter++;
+	if (RxCounter < RxSIZE)
+	{
+		if (RxCounter == RxSIZE - 1)
+		{
+			HAL_I2C_Slave_Seq_Receive_IT(hi2c, RxData, 1, I2C_LAST_FRAME);
+		}
+		else
+		{
+			HAL_I2C_Slave_Seq_Receive_IT(hi2c, RxData, 1, I2C_NEXT_FRAME);
+		}
+
+	}
 }
 
 /**
